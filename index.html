@@ -103,15 +103,49 @@
             font-size: 0.9rem;
             cursor: pointer;
             transition: all 0.2s ease;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 0.7rem top 50%;
+            background-size: 1.2rem auto;
+            padding-right: 2.5rem;
         }
 
         .sort-select:focus {
             outline: none;
             border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3);
         }
 
         .sort-select option {
-            background-color: var(--background);
+            background-color: #1a2234;
+            color: white;
+            padding: 10px;
+            border: none;
+        }
+
+        .sort-select::-moz-focus-inner {
+            border: 0;
+        }
+
+        .sort-select::-ms-expand {
+            display: none;
+        }
+
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .select-wrapper::after {
+            content: '';
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
         }
 
         #results {
@@ -369,7 +403,7 @@
         </div>
 
         <div class="sort-container">
-            <div>
+            <div class="select-wrapper">
                 <span class="sort-label">Sort TLDs by:</span>
                 <select id="tldSortSelect" class="sort-select" onchange="applySorting()">
                     <option value="count-desc">Domain Count (High to Low)</option>
@@ -380,7 +414,7 @@
                     <option value="length-desc">TLD Length (Long to Short)</option>
                 </select>
             </div>
-            <div>
+            <div class="select-wrapper">
                 <span class="sort-label">Sort Domains by:</span>
                 <select id="domainSortSelect" class="sort-select" onchange="applySorting()">
                     <option value="alpha-asc">Alphabetical (A-Z)</option>
