@@ -73,6 +73,47 @@
             display: flex;
         }
 
+        .sort-container {
+            display: none;
+            background: var(--glass);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1.5rem;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .sort-container.visible {
+            display: flex;
+        }
+
+        .sort-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .sort-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sort-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .sort-select option {
+            background-color: var(--background);
+        }
+
         #results {
             display: none;
             flex-direction: column;
@@ -327,6 +368,29 @@
                    oninput="filterDomains(event)">
         </div>
 
+        <div class="sort-container">
+            <div>
+                <span class="sort-label">Sort TLDs by:</span>
+                <select id="tldSortSelect" class="sort-select" onchange="applySorting()">
+                    <option value="count-desc">Domain Count (High to Low)</option>
+                    <option value="count-asc">Domain Count (Low to High)</option>
+                    <option value="alpha-asc">Alphabetical (A-Z)</option>
+                    <option value="alpha-desc">Alphabetical (Z-A)</option>
+                    <option value="length-asc">TLD Length (Short to Long)</option>
+                    <option value="length-desc">TLD Length (Long to Short)</option>
+                </select>
+            </div>
+            <div>
+                <span class="sort-label">Sort Domains by:</span>
+                <select id="domainSortSelect" class="sort-select" onchange="applySorting()">
+                    <option value="alpha-asc">Alphabetical (A-Z)</option>
+                    <option value="alpha-desc">Alphabetical (Z-A)</option>
+                    <option value="length-asc">Length (Short to Long)</option>
+                    <option value="length-desc">Length (Long to Short)</option>
+                </select>
+            </div>
+        </div>
+
         <div id="results"></div>
         <div id="load-more-btn"></div>
         <div id="downloadSection" style="text-align: center; margin-top: 2rem; justify-content: center;"></div>
@@ -385,12 +449,16 @@
             const progressBar = document.querySelector('.progress-bar-fill');
             const progressText = document.querySelector('.progress-text');
             const searchContainer = document.querySelector('.search-container');
+            const sortContainer = document.querySelector('.sort-container');
             const results = document.getElementById('results');
+            const loadMoreBtn = document.getElementById('load-more-btn');
             const downloadSection = document.getElementById('downloadSection');
             
             // Reset UI
             searchContainer.classList.remove('visible');
+            sortContainer.classList.remove('visible');
             results.classList.remove('visible');
+            loadMoreBtn.className = '';
             downloadSection.classList.remove('visible');
             results.innerHTML = '';
             
@@ -446,6 +514,7 @@
                 
                 // Show UI elements after processing
                 searchContainer.classList.add('visible');
+                sortContainer.classList.add('visible');
                 results.classList.add('visible');
                 downloadSection.classList.add('visible');
                 
@@ -492,6 +561,23 @@
             updateDownloadButton();
         }
 
+        function applySorting() {
+            const tldSortMethod = document.getElementById('tldSortSelect').value;
+            const domainSortMethod = document.getElementById('domainSortSelect').value;
+            
+            // Store sort preferences
+            window.tldSortMethod = tldSortMethod;
+            window.domainSortMethod = domainSortMethod;
+            
+            // Re-apply current filters
+            const tldSearchValue = document.getElementById('tldSearch').value;
+            if (tldSearchValue) {
+                filterTLDs({ target: { value: tldSearchValue } });
+            } else {
+                updateUI();
+            }
+        }
+
         function updateUI(filteredTLDs = null) {
             const results = document.getElementById('results');
             const loadMoreBtn = document.getElementById('load-more-btn');
@@ -516,8 +602,29 @@
             const tlds = filteredTLDs || Object.keys(allData);
             const domainSearch = document.getElementById('domainSearch').value.toLowerCase();
             
-            // Sort TLDs by domain count (descending)
-            tlds.sort((a, b) => allData[b].length - allData[a].length);
+            // Sort TLDs based on selected method
+            const tldSortMethod = window.tldSortMethod || 'count-desc';
+            
+            switch (tldSortMethod) {
+                case 'count-desc':
+                    tlds.sort((a, b) => allData[b].length - allData[a].length);
+                    break;
+                case 'count-asc':
+                    tlds.sort((a, b) => allData[a].length - allData[b].length);
+                    break;
+                case 'alpha-asc':
+                    tlds.sort((a, b) => a.localeCompare(b));
+                    break;
+                case 'alpha-desc':
+                    tlds.sort((a, b) => b.localeCompare(a));
+                    break;
+                case 'length-asc':
+                    tlds.sort((a, b) => a.length - b.length);
+                    break;
+                case 'length-desc':
+                    tlds.sort((a, b) => b.length - a.length);
+                    break;
+            }
             
             // Only show the first 20 TLDs initially for performance
             const visibleTlds = tlds.slice(0, 20);
@@ -575,8 +682,27 @@
         function showTLD(tld, domains = allData[tld]) {
             const results = document.getElementById('results');
             
+            // Sort domains based on selected method
+            const domainSortMethod = window.domainSortMethod || 'alpha-asc';
+            let sortedDomains = [...domains];
+            
+            switch (domainSortMethod) {
+                case 'alpha-asc':
+                    sortedDomains.sort((a, b) => a.localeCompare(b));
+                    break;
+                case 'alpha-desc':
+                    sortedDomains.sort((a, b) => b.localeCompare(a));
+                    break;
+                case 'length-asc':
+                    sortedDomains.sort((a, b) => a.length - b.length);
+                    break;
+                case 'length-desc':
+                    sortedDomains.sort((a, b) => b.length - a.length);
+                    break;
+            }
+            
             // Limit to 1000 domains for performance
-            const displayDomains = domains.slice(0, 1000);
+            const displayDomains = sortedDomains.slice(0, 1000);
             const hasMore = domains.length > 1000;
             
             const tldHtml = `
